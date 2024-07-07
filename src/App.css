@@ -32,6 +32,17 @@ body {
     border-radius: 10px;
     width: 400px;
     max-width: 90%;
+
+}
+.Titlebar{
+    display: flex;
+    align-items: center;
+    height: 90px;
+}
+ .title{
+    /* margin-top: auto;
+    margin-bottom: auto; */
+    margin: auto;
 }
 
 footer {
@@ -46,16 +57,18 @@ footer a {
 .inputGroup {
     display: flex;
     flex-direction: column;
+    padding-top: 5px;
 }
 
 .mainLabel {
-    margin-bottom: 20px;
-    margin-top: 0;
+    margin-bottom: 15px;
+    margin-top: 10px;
 }
 
 .homePageLogo {
     height: 80px;
-    margin-bottom: 30px;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .inputBox {
@@ -63,7 +76,8 @@ footer a {
     border-radius: 5px;
     outline: none;
     border: none;
-    margin-bottom: 14px;
+    margin-top: 5px;
+    margin-bottom: 8px;
     background: #eee;
     font-size: 16px;
     font-weight: bold;

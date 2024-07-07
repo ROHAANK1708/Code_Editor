@@ -1,14 +1,21 @@
 const express = require('express');
 const app = express();
-
 const http = require('http');
 const path = require('path');
-const {Server} = require('socket.io');
+const { Server } = require('socket.io');
+const cors = require('cors');
 
 const ACTIONS = require('./src/actions/Actions');
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
+app.use(cors());
 
 app.use(express.static('build'));
 app.use((req, res, next) => {
@@ -16,8 +23,8 @@ app.use((req, res, next) => {
 });
 
 const userSocketMap = {};
+
 function getAllConnectedClients(roomId) {
-    // Map
     return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
         (socketId) => {
             return {
@@ -31,11 +38,12 @@ function getAllConnectedClients(roomId) {
 io.on('connection', (socket) => {
     console.log('socket connected', socket.id);
 
-    socket.on(ACTIONS.JOIN, ({roomId, username}) => {
+    socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
+        console.log(`User joined: ${username} in room: ${roomId}`);
         userSocketMap[socket.id] = username;
         socket.join(roomId);
         const clients = getAllConnectedClients(roomId);
-        clients.forEach(({socketId}) => {
+        clients.forEach(({ socketId }) => {
             io.to(socketId).emit(ACTIONS.JOINED, {
                 clients,
                 username,
@@ -44,16 +52,19 @@ io.on('connection', (socket) => {
         });
     });
 
-    socket.on(ACTIONS.CODE_CHANGE, ({roomId, code}) => {
-        socket.in(roomId).emit(ACTIONS.CODE_CHANGE, {code});
+    socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
+        console.log(`Code change in room: ${roomId}`);
+        socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
     });
 
-    socket.on(ACTIONS.SYNC_CODE, ({socketId, code}) => {
-        io.to(socketId).emit(ACTIONS.CODE_CHANGE, {code});
+    socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
+        console.log(`Syncing code to socket: ${socketId}`);
+        io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
     });
 
     socket.on('disconnecting', () => {
         const rooms = [...socket.rooms];
+        console.log(`User disconnecting: ${userSocketMap[socket.id]}`);
         rooms.forEach((roomId) => {
             socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
                 socketId: socket.id,
@@ -65,7 +76,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Serve response in production
 app.get('/', (req, res) => {
     const htmlContent = '<h1>Welcome to the code editor server</h1>';
     res.setHeader('Content-Type', 'text/html');
