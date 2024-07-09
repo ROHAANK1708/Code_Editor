@@ -1,5 +1,5 @@
 import {io} from 'socket.io-client';
-
+io.connect("http://localhost:5000");
 export const initSocket = async () => {
     const options = {
         'force new connection': true,

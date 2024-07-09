@@ -4,6 +4,9 @@ import { Toaster } from "react-hot-toast";
 import Home from "./pages/Home";
 import EditorPage from "./pages/EditorPage";
 import { RecoilRoot } from "recoil";
+import { io } from 'socket.io-client';
+io.connect("http://localhost:5000");
+
 
 function App() {
   return (

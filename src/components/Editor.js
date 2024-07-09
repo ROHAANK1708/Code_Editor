@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { useRecoilValue } from 'recoil';
-import { language, cmtheme } from '../../src/atoms';
+import React, {useEffect, useRef} from 'react';
+import {language, cmtheme} from '../../src/atoms';
+import {useRecoilValue} from 'recoil';
 import ACTIONS from '../actions/Actions';
+
+// CODE MIRROR
 import Codemirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 
-// necessary themes and modes for CodeMirror
+// theme
 import 'codemirror/theme/3024-day.css';
 import 'codemirror/theme/3024-night.css';
 import 'codemirror/theme/abbott.css';
@@ -70,7 +72,7 @@ import 'codemirror/theme/yeti.css';
 import 'codemirror/theme/yonce.css';
 import 'codemirror/theme/zenburn.css';
 
-// necessary modes
+// modes
 import 'codemirror/mode/clike/clike';
 import 'codemirror/mode/css/css';
 import 'codemirror/mode/dart/dart';
@@ -93,78 +95,69 @@ import 'codemirror/mode/swift/swift';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/yaml/yaml';
 
-// necessary addons
+// features
 import 'codemirror/addon/edit/closetag';
 import 'codemirror/addon/edit/closebrackets';
 import 'codemirror/addon/scroll/simplescrollbars.css';
+
+//search
 import 'codemirror/addon/search/search.js';
 import 'codemirror/addon/search/searchcursor.js';
 import 'codemirror/addon/search/jump-to-line.js';
 import 'codemirror/addon/dialog/dialog.js';
 import 'codemirror/addon/dialog/dialog.css';
 
-const Editor = ({ socketRef, roomId, onCodeChange }) => {
+const Editor = ({socketRef, roomId, onCodeChange}) => {
+
     const editorRef = useRef(null);
     const lang = useRecoilValue(language);
     const editorTheme = useRecoilValue(cmtheme);
 
     useEffect(() => {
         async function init() {
-            if (!editorRef.current) return;
-
             editorRef.current = Codemirror.fromTextArea(
-                editorRef.current,
+                document.getElementById('realtimeEditor'),
                 {
-                    mode: lang,
+                    mode: {name: lang},
                     theme: editorTheme,
                     autoCloseTags: true,
                     autoCloseBrackets: true,
-                    lineNumbers: true
+                    lineNumbers: true,
                 }
             );
 
             editorRef.current.on('change', (instance, changes) => {
-                const { origin } = changes;
+                const {origin} = changes;
                 const code = instance.getValue();
                 onCodeChange(code);
                 if (origin !== 'setValue') {
                     socketRef.current.emit(ACTIONS.CODE_CHANGE, {
                         roomId,
-                        code
+                        code,
                     });
+                }
+            });
+
+        }
+        init();
+    }, [lang]);
+
+    useEffect(() => {
+        if (socketRef.current) {
+            socketRef.current.on(ACTIONS.CODE_CHANGE, ({code}) => {
+                if (code !== null) {
+                    editorRef.current.setValue(code);
                 }
             });
         }
 
-        init();
-
         return () => {
-            if (editorRef.current) {
-                editorRef.current.toTextArea();
-            }
-        };
-    }, [lang]);
-
-    useEffect(() => {
-        const handleChange = ({ code }) => {
-            if (code !== null) {
-                editorRef.current.setValue(code);
-            }
-        };
-
-        if (socketRef.current) {
-            socketRef.current.on(ACTIONS.CODE_CHANGE, handleChange);
-        }
-
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.off(ACTIONS.CODE_CHANGE, handleChange);
-            }
+            socketRef.current.off(ACTIONS.CODE_CHANGE);
         };
     }, [socketRef.current]);
 
     return (
-        <textarea id="realtimeEditor" ref={editorRef}></textarea>
+        <textarea id="realtimeEditor"></textarea>
     );
 };
 
